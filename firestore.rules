@@ -1,0 +1,136 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common security primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for Turma
+    function isValidTurma(data) {
+      return data.nome is string && data.nome.size() >= 1 && data.nome.size() <= 100 &&
+        (!('turno' in data) || (data.turno is string && data.turno.size() <= 50)) &&
+        (!('anoLetivo' in data) || (data.anoLetivo is string && data.anoLetivo.size() <= 20)) &&
+        (!('sala' in data) || (data.sala is string && data.sala.size() <= 50)) &&
+        (!('cargaHorariaTotal' in data) || data.cargaHorariaTotal is number) &&
+        (!('professorReferencia' in data) || (data.professorReferencia is string && data.professorReferencia.size() <= 120)) &&
+        (!('observacoes' in data) || (data.observacoes is string && data.observacoes.size() <= 500)) &&
+        (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128));
+    }
+
+    // Validation for Aluno
+    function isValidAluno(data) {
+      return data.nome is string && data.nome.size() >= 1 && data.nome.size() <= 150 &&
+        data.turmaId is string && data.turmaId.size() <= 128 &&
+        (!('matricula' in data) || (data.matricula is string && data.matricula.size() <= 50)) &&
+        (!('dataNascimento' in data) || (data.dataNascimento is string && data.dataNascimento.size() <= 20)) &&
+        (!('responsavelNome' in data) || (data.responsavelNome is string && data.responsavelNome.size() <= 150)) &&
+        (!('responsavelTelefone' in data) || (data.responsavelTelefone is string && data.responsavelTelefone.size() <= 40)) &&
+        (!('responsavelEmail' in data) || (data.responsavelEmail is string && data.responsavelEmail.size() <= 120)) &&
+        (!('endereco' in data) || (data.endereco is string && data.endereco.size() <= 250)) &&
+        (!('observacoes' in data) || (data.observacoes is string && data.observacoes.size() <= 1000)) &&
+        (!('ativo' in data) || data.ativo is bool) &&
+        (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128));
+    }
+
+    // Validation for Falta
+    function isValidFalta(data) {
+      return data.alunoId is string && data.alunoId.size() <= 128 &&
+        data.turmaId is string && data.turmaId.size() <= 128 &&
+        data.data is string && data.data.size() <= 20 &&
+        data.horasFalta is number && data.horasFalta >= 0 &&
+        (!('motivo' in data) || (data.motivo is string && data.motivo.size() <= 250)) &&
+        (!('justificada' in data) || data.justificada is bool) &&
+        (!('observacoes' in data) || (data.observacoes is string && data.observacoes.size() <= 500)) &&
+        (!('registradoPor' in data) || (data.registradoPor is string && data.registradoPor.size() <= 100)) &&
+        (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128));
+    }
+
+    // Validation for Atestado
+    function isValidAtestado(data) {
+      return data.alunoId is string && data.alunoId.size() <= 128 &&
+        data.turmaId is string && data.turmaId.size() <= 128 &&
+        data.dataInicio is string && data.dataInicio.size() <= 20 &&
+        data.dataTermino is string && data.dataTermino.size() <= 20 &&
+        (!('diasAfastamento' in data) || data.diasAfastamento is number) &&
+        (!('horasAbonadas' in data) || data.horasAbonadas is number) &&
+        (!('cid' in data) || (data.cid is string && data.cid.size() <= 20)) &&
+        (!('crm' in data) || (data.crm is string && data.crm.size() <= 30)) &&
+        (!('medicoNome' in data) || (data.medicoNome is string && data.medicoNome.size() <= 120)) &&
+        (!('motivo' in data) || (data.motivo is string && data.motivo.size() <= 300)) &&
+        (!('observacoes' in data) || (data.observacoes is string && data.observacoes.size() <= 500)) &&
+        (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128));
+    }
+
+    // Validation for Intervencao
+    function isValidIntervencao(data) {
+      return data.alunoId is string && data.alunoId.size() <= 128 &&
+        data.turmaId is string && data.turmaId.size() <= 128 &&
+        data.data is string && data.data.size() <= 20 &&
+        data.tipo is string && data.tipo.size() <= 100 &&
+        (!('descricao' in data) || (data.descricao is string && data.descricao.size() <= 1000)) &&
+        (!('responsavelAcao' in data) || (data.responsavelAcao is string && data.responsavelAcao.size() <= 120)) &&
+        (!('status' in data) || (data.status is string && data.status.size() <= 50)) &&
+        (!('resultado' in data) || (data.resultado is string && data.resultado.size() <= 1000)) &&
+        (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128));
+    }
+
+    // Turmas collection
+    match /turmas/{turmaId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(turmaId) && isValidTurma(incoming());
+      allow update: if isSignedIn() && isValidId(turmaId) && isValidTurma(incoming());
+      allow delete: if isSignedIn() && isValidId(turmaId);
+    }
+
+    // Alunos collection
+    match /alunos/{alunoId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(alunoId) && isValidAluno(incoming());
+      allow update: if isSignedIn() && isValidId(alunoId) && isValidAluno(incoming());
+      allow delete: if isSignedIn() && isValidId(alunoId);
+    }
+
+    // Faltas collection
+    match /faltas/{faltaId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(faltaId) && isValidFalta(incoming());
+      allow update: if isSignedIn() && isValidId(faltaId) && isValidFalta(incoming());
+      allow delete: if isSignedIn() && isValidId(faltaId);
+    }
+
+    // Atestados collection
+    match /atestados/{atestadoId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(atestadoId) && isValidAtestado(incoming());
+      allow update: if isSignedIn() && isValidId(atestadoId) && isValidAtestado(incoming());
+      allow delete: if isSignedIn() && isValidId(atestadoId);
+    }
+
+    // Intervencoes collection
+    match /intervencoes/{intervencaoId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(intervencaoId) && isValidIntervencao(incoming());
+      allow update: if isSignedIn() && isValidId(intervencaoId) && isValidIntervencao(incoming());
+      allow delete: if isSignedIn() && isValidId(intervencaoId);
+    }
+  }
+}

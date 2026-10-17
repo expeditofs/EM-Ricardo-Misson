@@ -1,0 +1,6 @@
+{
+  "name": "Gestão de Infrequência Escolar - E.M. Ricardo Misson",
+  "description": "Sistema de gestão de infrequências, controle de faltas e atestados, monitoramento de perda de carga horária e intervenções pedagógicas preventivas contra evasão escolar da E.M. Ricardo Misson (Uberaba).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
